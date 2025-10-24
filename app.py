@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
@@ -13,7 +13,14 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'sqlite:///miniblog.db'
+# Use PostgreSQL on Railway, SQLite for local development
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    # Production: Use PostgreSQL (Railway provides DATABASE_URL)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Development: Use SQLite
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///miniblog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-string'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)
@@ -149,9 +156,28 @@ def terms():
 def privacy():
     return render_template('privacy.html')
 
-if __name__ == '__main__':
+@app.route('/init-db')
+def init_database():
+    """Initialize database tables (for production setup)"""
+    try:
+        with app.app_context():
+            db.create_all()
+            return jsonify({'message': 'Database initialized successfully', 'status': 'success'}), 200
+    except Exception as e:
+        return jsonify({'message': f'Database initialization failed: {str(e)}', 'status': 'error'}), 500
+
+def create_tables():
+    """Create database tables if they don't exist"""
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+            print("✅ Database tables created successfully")
+        except Exception as e:
+            print(f"❌ Error creating tables: {e}")
+
+if __name__ == '__main__':
+    # Create tables on startup
+    create_tables()
     
     # Get port from environment variable (for production)
     port = int(os.environ.get('PORT', 5000))
