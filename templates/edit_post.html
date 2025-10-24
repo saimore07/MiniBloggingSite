@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Post - MiniBlog{% endblock %}
+
+{% block content %}
+<div class="container-lg py-4">
+    <div class="mb-3">
+        <h1 class="h3 fw-bold text-dark mb-1">Edit Post</h1>
+        <p class="text-secondary mb-0">Update your content and republish when ready</p>
+    </div>
+    
+    <form id="editPostForm">
+        <div class="card shadow-sm">
+            <div class="card-body p-4 p-md-5">
+                <!-- Title -->
+                <div class="mb-3">
+                    <label for="title" class="form-label">Post Title</label>
+                    <input type="text" id="title" name="title" required class="form-control form-control-lg" value="{{ post.title }}">
+                </div>
+                
+                <!-- Content -->
+                <div class="mb-3">
+                    <label for="content" class="form-label">Content</label>
+                    <textarea id="content" name="content" rows="12" required class="form-control">{{ post.content }}</textarea>
+                    <div class="form-text">Minimum 50 characters</div>
+                </div>
+                
+                <!-- Tags -->
+                <div class="mb-3">
+                    <label for="tags" class="form-label">Tags</label>
+                    <input type="text" id="tags" name="tags" class="form-control" value="{{ post.tags }}">
+                    <div class="form-text">Separate multiple tags with commas</div>
+                </div>
+                
+                
+            </div>
+            
+            <!-- Actions -->
+            <div class="card-footer bg-white d-flex align-items-center justify-content-between">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="isPublished" name="isPublished" {% if post.is_published %}checked{% endif %}>
+                    <label class="form-check-label" for="isPublished">Published</label>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-gradient"><i class="fas fa-save me-2"></i>Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editPostForm');
+    const titleInput = document.getElementById('title');
+    const contentInput = document.getElementById('content');
+    const postId = {{ post.id }};
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const title = titleInput.value.trim();
+        const content = contentInput.value.trim();
+        const tags = document.getElementById('tags').value.trim();
+        const isPublished = document.getElementById('isPublished').checked;
+
+        if (!title || title.length < 3) {
+            alert('Title must be at least 3 characters long');
+            return;
+        }
+        if (!content || content.length < 50) {
+            alert('Content must be at least 50 characters long');
+            return;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+        submitBtn.disabled = true;
+
+        const payload = {
+            title: title,
+            content: content,
+            is_published: isPublished
+        };
+        if (tags) {
+            payload.tags = tags.split(',').map(t => t.trim()).filter(Boolean);
+        }
+
+        const headers = { 'Content-Type': 'application/json' };
+        const token = localStorage.getItem('token');
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        fetch(`/api/posts/${postId}`, {
+            method: 'PUT',
+            headers: headers,
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.post) {
+                window.location.href = '/dashboard';
+            } else {
+                throw new Error(data.error || 'Failed to update post');
+            }
+        })
+        .catch(err => {
+            alert('Failed to update post: ' + err.message);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+});
+</script>
+{% endblock %}
+
+

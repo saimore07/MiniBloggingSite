@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - MiniBlog{% endblock %}
+
+{% block content %}
+<div class="container-lg py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-5">
+            <div class="text-center mb-4">
+                <div class="rounded-circle gradient-bg d-inline-flex align-items-center justify-content-center mb-3" style="width:64px;height:64px;">
+                    <i class="fas fa-user-plus text-white" style="font-size:24px;"></i>
+                </div>
+                <h2 class="h3 fw-bold text-dark mb-1">Join MiniBlog</h2>
+                <p class="text-secondary mb-0">Create your account and start sharing</p>
+            </div>
+            
+            <form class="mt-3" method="POST" action="{{ url_for('auth.register') }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <div class="position-relative">
+                        <i class="fas fa-user position-absolute top-50 translate-middle-y text-secondary" style="left: 12px;"></i>
+                        <input id="username" name="username" type="text" required class="form-control ps-5 py-3" placeholder="Choose a username">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address</label>
+                    <div class="position-relative">
+                        <i class="fas fa-envelope position-absolute top-50 translate-middle-y text-secondary" style="left: 12px;"></i>
+                        <input id="email" name="email" type="email" required class="form-control ps-5 py-3" placeholder="Enter your email">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="position-relative">
+                        <i class="fas fa-lock position-absolute top-50 translate-middle-y text-secondary" style="left: 12px;"></i>
+                        <input id="password" name="password" type="password" required class="form-control ps-5 py-3" placeholder="Create a password">
+                    </div>
+                    <div class="form-text">Must be at least 6 characters long</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="confirm-password" class="form-label">Confirm Password</label>
+                    <div class="position-relative">
+                        <i class="fas fa-lock position-absolute top-50 translate-middle-y text-secondary" style="left: 12px;"></i>
+                        <input id="confirm-password" name="confirm-password" type="password" required class="form-control ps-5 py-3" placeholder="Confirm your password">
+                    </div>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input id="terms" name="terms" type="checkbox" class="form-check-input" required>
+                    <label for="terms" class="form-check-label">I agree to the <a href="#" class="link-primary fw-medium">Terms of Service</a> and <a href="#" class="link-primary fw-medium">Privacy Policy</a></label>
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-gradient btn-lg fw-semibold">Create Account</button>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <p class="text-secondary mb-0">Already have an account? 
+                        <a href="{{ url_for('login') }}" class="link-primary fw-medium">Sign in here</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm-password');
+    
+    // Password confirmation validation
+    confirmPassword.addEventListener('input', function() {
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.setCustomValidity('Passwords do not match');
+        } else {
+            confirmPassword.setCustomValidity('');
+        }
+    });
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const passwordValue = password.value;
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Creating Account...';
+        submitBtn.disabled = true;
+        
+        // Simulate API call (replace with actual API call)
+        fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: passwordValue
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.access_token) {
+                // Store token and redirect
+                localStorage.setItem('token', data.access_token);
+                window.location.href = '/dashboard';
+            } else {
+                throw new Error(data.error || 'Registration failed');
+            }
+        })
+        .catch(error => {
+            alert('Registration failed: ' + error.message);
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+});
+</script>
+{% endblock %}

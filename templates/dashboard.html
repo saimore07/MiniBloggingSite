@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - MiniBlog{% endblock %}
+
+{% block content %}
+<div class="container-lg py-4">
+    <!-- Header -->
+    <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h1 class="h3 fw-bold text-dark">Welcome back, {{ current_user.username }}!</h1>
+                <p class="text-secondary mt-1">Manage your posts and engage with the community</p>
+            </div>
+            <a href="{{ url_for('create_post') }}" class="btn btn-gradient fw-medium">
+                <i class="fas fa-plus me-2"></i>New Post
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="rounded d-inline-flex align-items-center justify-content-center bg-primary-subtle me-3" style="width:48px;height:48px;">
+                        <i class="fas fa-blog text-primary"></i>
+                    </div>
+                    <div>
+                        <p class="small fw-medium text-secondary mb-1">Total Posts</p>
+                        <p class="fs-4 fw-bold text-dark mb-0">{{ posts|length }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="rounded d-inline-flex align-items-center justify-content-center bg-success-subtle me-3" style="width:48px;height:48px;">
+                        <i class="fas fa-eye text-success"></i>
+                    </div>
+                    <div>
+                        <p class="small fw-medium text-secondary mb-1">Total Views</p>
+                        <p class="fs-4 fw-bold text-dark mb-0">{{ posts|sum(attribute='view_count') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="rounded d-inline-flex align-items-center justify-content-center bg-danger-subtle me-3" style="width:48px;height:48px;">
+                        <i class="fas fa-heart text-danger"></i>
+                    </div>
+                    <div>
+                        <p class="small fw-medium text-secondary mb-1">Total Likes</p>
+                        <p class="fs-4 fw-bold text-dark mb-0">
+                        {% set total_likes = 0 %}
+                        {% for post in posts %}
+                            {% set total_likes = total_likes + post.get_like_count() %}
+                        {% endfor %}
+                        {{ total_likes }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="rounded d-inline-flex align-items-center justify-content-center bg-secondary-subtle me-3" style="width:48px;height:48px;">
+                        <i class="fas fa-comment text-secondary"></i>
+                    </div>
+                    <div>
+                        <p class="small fw-medium text-secondary mb-1">Total Comments</p>
+                        <p class="fs-4 fw-bold text-dark mb-0">
+                        {% set total_comments = 0 %}
+                        {% for post in posts %}
+                            {% set total_comments = total_comments + post.get_comment_count() %}
+                        {% endfor %}
+                        {{ total_comments }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Posts Section -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <h2 class="h5 fw-semibold text-dark mb-0">Your Posts</h2>
+                <div>
+                    <select id="statusFilter" class="form-select form-select-sm w-auto">
+                        <option value="all">All Posts</option>
+                        <option value="published">Published</option>
+                        <option value="draft">Drafts</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            {% if posts %}
+                <div class="d-flex flex-column gap-3" id="postsList">
+                    {% for post in posts %}
+                        <div class="border rounded p-3 post-item" data-status="{{ 'published' if post.is_published else 'draft' }}">
+                            <div class="d-flex align-items-start justify-content-between">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <h3 class="h6 fw-semibold text-dark me-2 mb-0">
+                                            <a href="{{ url_for('view_post', post_id=post.id) }}" class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover">
+                                                {{ post.title }}
+                                            </a>
+                                        </h3>
+                                        <span class="badge {{ 'text-bg-success' if post.is_published else 'text-bg-warning' }}">{{ 'Published' if post.is_published else 'Draft' }}</span>
+                                    </div>
+                                    <p class="text-secondary mb-2">{{ post.excerpt or post.content[:150] + '...' }}</p>
+                                    <div class="d-flex align-items-center gap-3 small text-secondary">
+                                        <span class="d-inline-flex align-items-center"><i class="fas fa-calendar me-1"></i>{{ post.created_at.strftime('%B %d, %Y') }}</span>
+                                        <span class="d-inline-flex align-items-center"><i class="fas fa-eye me-1"></i>{{ post.view_count }} views</span>
+                                        <span class="d-inline-flex align-items-center"><i class="fas fa-heart me-1"></i>{{ post.get_like_count() }} likes</span>
+                                        <span class="d-inline-flex align-items-center"><i class="fas fa-comment me-1"></i>{{ post.get_comment_count() }} comments</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-1 ms-3">
+                                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-sm btn-outline-primary" title="View Post"><i class="fas fa-eye"></i></a>
+                                    <a href="{{ url_for('edit_post', post_id=post.id) }}" class="btn btn-sm btn-outline-success" title="Edit Post"><i class="fas fa-edit"></i></a>
+                                    <button onclick="deletePost({{ post.id }})" class="btn btn-sm btn-outline-danger" title="Delete Post"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width:96px;height:96px;">
+                        <i class="fas fa-blog text-secondary" style="font-size:28px;"></i>
+                    </div>
+                    <h3 class="h5 fw-semibold text-dark mb-2">No posts yet</h3>
+                    <p class="text-secondary mb-3">Start sharing your thoughts with the world!</p>
+                    <a href="{{ url_for('create_post') }}" class="btn btn-gradient fw-medium">Create Your First Post</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusFilter = document.getElementById('statusFilter');
+    const postItems = document.querySelectorAll('.post-item');
+    
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            const selectedStatus = this.value;
+            
+            postItems.forEach(function(item) {
+                const itemStatus = item.getAttribute('data-status');
+                
+                if (selectedStatus === 'all' || itemStatus === selectedStatus) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+
+function deletePost(postId) {
+    if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+        fetch(`/api/posts/${postId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                location.reload();
+            } else {
+                alert('Failed to delete post: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            alert('Failed to delete post: ' + error.message);
+        });
+    }
+}
+</script>
+{% endblock %}
