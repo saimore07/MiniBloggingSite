@@ -166,6 +166,18 @@ def init_database():
     except Exception as e:
         return jsonify({'message': f'Database initialization failed: {str(e)}', 'status': 'error'}), 500
 
+@app.route('/db-info')
+def database_info():
+    """Get database connection info (for development)"""
+    if os.environ.get('FLASK_ENV') == 'production':
+        return jsonify({'message': 'Database info not available in production'}), 403
+    
+    database_url = os.environ.get('DATABASE_URL', 'Not set')
+    return jsonify({
+        'database_url': database_url,
+        'message': 'Database connection info (development only)'
+    })
+
 def create_tables():
     """Create database tables if they don't exist"""
     with app.app_context():
